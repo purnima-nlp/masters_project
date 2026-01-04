@@ -1,4 +1,4 @@
-from .l1_loss import L1Loss
+from .L1 import L1Loss
 
 __all__ = ['L1Loss']
 
