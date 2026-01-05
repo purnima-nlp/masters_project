@@ -18,7 +18,7 @@ class VideoSRModel(nn.Module):
     def __init__(
         self,
         scale=4,
-        in_chans=3,
+        in_chans=1,
         embed_dim=96,
         depths=(2, 2, 6, 2),
         num_heads=(3, 6, 12, 24),
@@ -62,7 +62,7 @@ class VideoSRModel(nn.Module):
 if __name__ == "__main__":
     # Quick sanity check
     model = VideoSRModel(scale=4)
-    dummy = torch.randn(1, 3, 8, 64, 64)
+    dummy = torch.randn(1, 1, 8, 64, 64)
     out = model(dummy)
     print("Output shape:", out.shape)
 
