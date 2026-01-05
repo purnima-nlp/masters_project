@@ -23,7 +23,7 @@ class VideoSRModel(nn.Module):
         depths=(2, 2, 6, 2),
         num_heads=(3, 6, 12, 24),
         window_size=(2, 7, 7),
-        pretrained=None,
+        
     ):
         super().__init__()
 
@@ -34,7 +34,7 @@ class VideoSRModel(nn.Module):
             depths=list(depths),
             num_heads=list(num_heads),
             window_size=window_size,
-            pretrained=pretrained,
+            
         )
 
         # -------- Reconstruction Head --------
