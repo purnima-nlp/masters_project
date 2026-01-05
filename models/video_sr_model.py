@@ -9,10 +9,7 @@ class VideoSRModel(nn.Module):
     """
     Full Video Super-Resolution Model
 
-    Pipeline:
-        LR Video  --> SwinTransformer3D (backbone)
-                 --> ReconstructionHead (upsampling)
-                 --> HR Video
+    LR Video --> SwinTransformer3D --> ReconstructionHead --> HR Video
     """
 
     def __init__(
@@ -22,8 +19,6 @@ class VideoSRModel(nn.Module):
         embed_dim=96,
         depths=(2, 2, 6, 2),
         num_heads=(3, 6, 12, 24),
-        window_size=(2, 7, 7),
-        
     ):
         super().__init__()
 
@@ -33,8 +28,6 @@ class VideoSRModel(nn.Module):
             embed_dim=embed_dim,
             depths=list(depths),
             num_heads=list(num_heads),
-            window_size=window_size,
-            
         )
 
         # -------- Reconstruction Head --------
@@ -48,21 +41,17 @@ class VideoSRModel(nn.Module):
 
     def forward(self, x):
         """
-        Args:
-            x: LR video tensor of shape (B, C, T, H, W)
-
-        Returns:
-            HR video tensor of shape (B, C, T, H*scale, W*scale)
+        x: (B, C, T, H, W)
         """
-        feats = self.backbone(x)     # (B, C_feat, T, H', W')
-        out = self.head(feats)       # (B, C, T, H*scale, W*scale)
+        feats = self.backbone(x)
+        out = self.head(feats)
         return out
 
 
 if __name__ == "__main__":
-    # Quick sanity check
     model = VideoSRModel(scale=4)
     dummy = torch.randn(1, 1, 8, 64, 64)
     out = model(dummy)
     print("Output shape:", out.shape)
+
 
