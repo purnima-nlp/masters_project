@@ -179,7 +179,7 @@ class SwinTransformerBlock3D(nn.Module):
                  attn_drop=0.,
                  drop_path=0.,
                  use_checkpoint=False,
-                 self.num_features = embed_dim
+                 
 
             ):
         super().__init__()
@@ -274,6 +274,8 @@ class SwinTransformer3D(nn.Module):
                  num_heads=(3, 6, 12, 24),
                  window_size=(2, 7, 7)):
         super().__init__()
+        self.num_features = embed_dim * (2 ** (len(depths) - 1))
+
 
         self.patch_embed = PatchEmbed3D(
             in_chans=in_chans,
