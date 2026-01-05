@@ -32,7 +32,12 @@ def main():
     device = args.device if torch.cuda.is_available() else "cpu"
 
     # -------- Model --------
-    model = VideoSRModel(scale=args.scale, in_chans=1)
+    model = VideoSRModel(
+    scale=args.scale,
+    in_chans=1,
+    window_size=(2, 4, 4)   # <-- ONLY change needed
+)
+
 
     if args.checkpoint is not None:
         print(f"[INFO] Loading checkpoint from {args.checkpoint}")
