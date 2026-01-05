@@ -9,7 +9,7 @@ from models.video_sr_model import VideoSRModel
 from datasets.video_sr_dataset import VideoSRDataset
 from datasets.pipelines.compose import Compose
 from datasets.pipelines.loading import LoadVimeoFrames
-from datasets.pipelines.transforms import GenerateLRHR
+from datasets.pipelines.transforms import GenerateLR
 
 
 # -------------------------
@@ -49,7 +49,7 @@ def main():
     # -------- Pipeline --------
     pipeline = Compose([
         LoadVimeoFrames(),
-        GenerateLRHR(scale=args.scale)
+        GenerateLR(scale=args.scale)
     ])
 
     # -------- Dataset --------
