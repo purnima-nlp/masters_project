@@ -1,7 +1,8 @@
-import argparse
+import sys
 import os
+sys.path.append(os.path.abspath('.'))
+import argparse
 import torch
-
 from models.video_sr_model import VideoSRModel
 from datasets.video_sr_dataset import VideoSRDataset
 from pipelines.compose import Compose
