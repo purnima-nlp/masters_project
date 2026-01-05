@@ -1,42 +1,65 @@
 import argparse
-import torch
 import os
+import torch
 
 from models.video_sr_model import VideoSRModel
 from datasets.video_sr_dataset import VideoSRDataset
+from pipelines.compose import Compose
+from pipelines.loading import LoadVimeoFrames
 
 
+# -------------------------
+# Demo-only transform
+# -------------------------
+class DemoLRHR:
+    """
+    Create LR / HR tensors from loaded frames (demo only).
+    """
+    def __init__(self, scale):
+        self.scale = scale
+
+    def __call__(self, results):
+        frames = results["frames"]  # list of HWC numpy arrays
+
+        # Convert to torch tensor (C, T, H, W)
+        frames = torch.stack([
+            torch.from_numpy(f).permute(2, 0, 1)
+            for f in frames
+        ])  # (T, C, H, W)
+
+        frames = frames.float() / 255.0
+        frames = frames.permute(1, 0, 2, 3)  # (C, T, H, W)
+
+        # Generate LR by downsampling
+        lr = torch.nn.functional.interpolate(
+            frames.unsqueeze(0),
+            scale_factor=1 / self.scale,
+            mode="bilinear",
+            align_corners=False
+        ).squeeze(0)
+
+        results["lr"] = lr
+        results["hr"] = frames
+        return results
+
+
+# -------------------------
+# Args
+# -------------------------
 def parse_args():
     parser = argparse.ArgumentParser("Video Super-Resolution Demo")
 
-    parser.add_argument(
-        "--data_root",
-        type=str,
-        required=True,
-        help="Dataset root (or folder containing videos)"
-    )
-    parser.add_argument(
-        "--checkpoint",
-        type=str,
-        default=None,
-        help="Path to trained checkpoint (.pth). If not provided, runs with random weights."
-    )
-    parser.add_argument(
-        "--scale",
-        type=int,
-        default=4,
-        help="Super-resolution scale factor"
-    )
-    parser.add_argument(
-        "--device",
-        type=str,
-        default="cuda",
-        help="cuda or cpu"
-    )
+    parser.add_argument("--data_root", type=str, required=True)
+    parser.add_argument("--checkpoint", type=str, default=None)
+    parser.add_argument("--scale", type=int, default=4)
+    parser.add_argument("--device", type=str, default="cuda")
 
     return parser.parse_args()
 
 
+# -------------------------
+# Main
+# -------------------------
 def main():
     args = parse_args()
     device = args.device if torch.cuda.is_available() else "cpu"
@@ -54,15 +77,23 @@ def main():
     model = model.to(device)
     model.eval()
 
-    # -------- Load one sample --------
+    # -------- Pipeline --------
+    pipeline = Compose([
+        LoadVimeoFrames(),
+        DemoLRHR(scale=args.scale)
+    ])
+
+    # -------- Dataset --------
     dataset = VideoSRDataset(
         root_dir=args.data_root,
         scale=args.scale,
-        split="test"
+        split="test",
+        pipeline=pipeline
     )
 
-    sample = dataset[0]
-    lr_video = sample["lr"].unsqueeze(0).to(device)  # (1, C, T, H, W)
+    # Get ONE sample
+    lr, hr, scale = dataset[0]
+    lr_video = lr.unsqueeze(0).to(device)  # (1, C, T, H, W)
 
     # -------- Inference --------
     with torch.no_grad():
@@ -71,12 +102,10 @@ def main():
     print("LR video shape :", lr_video.shape)
     print("SR video shape :", sr_video.shape)
 
-    # -------- Save output tensor --------
+    # -------- Save output --------
     os.makedirs("outputs", exist_ok=True)
-    output_path = "outputs/sr_video.pt"
-    torch.save(sr_video.cpu(), output_path)
-
-    print(f"[INFO] Demo finished. Output saved to {output_path}")
+    torch.save(sr_video.cpu(), "outputs/sr_video.pt")
+    print("[INFO] Demo finished. Output saved to outputs/sr_video.pt")
 
 
 if __name__ == "__main__":
