@@ -49,7 +49,9 @@ def main():
     # -------- Pipeline --------
     pipeline = Compose([
         LoadVimeoFrames(),
-        GenerateLR(scale=args.scale)
+        RGB2Thermal(),
+        GenerateLR(scales=[args.scale]),
+        ToTensor()
     ])
 
     # -------- Dataset --------
