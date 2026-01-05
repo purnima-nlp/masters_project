@@ -9,7 +9,8 @@ from models.video_sr_model import VideoSRModel
 from datasets.video_sr_dataset import VideoSRDataset
 from datasets.pipelines.compose import Compose
 from datasets.pipelines.loading import LoadVimeoFrames
-from datasets.pipelines.transforms import GenerateLR
+from datasets.pipelines.transforms import RGB2Thermal, GenerateLR, ToTensor
+
 
 
 # -------------------------
