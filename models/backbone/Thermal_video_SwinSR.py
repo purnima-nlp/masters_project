@@ -178,7 +178,8 @@ class SwinTransformerBlock3D(nn.Module):
                  drop=0.,
                  attn_drop=0.,
                  drop_path=0.,
-                 use_checkpoint=False):
+                 use_checkpoint=False
+                pretrained = False):
         super().__init__()
         self.window_size = window_size
         self.shift_size = shift_size
