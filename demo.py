@@ -33,12 +33,10 @@ def main():
 
     # -------- Model --------
     model = VideoSRModel(
-    scale=args.scale,
-    in_chans=1,
-    window_size=(2, 4, 4),
-    depths=(1, 1, 1, 1)# <-- ONLY change needed
-)
-
+        scale=args.scale,
+        in_chans=1,
+        depths=(1, 1, 1, 1)   # lightweight for demo
+    )
 
     if args.checkpoint is not None:
         print(f"[INFO] Loading checkpoint from {args.checkpoint}")
@@ -67,11 +65,12 @@ def main():
     )
 
     # -------- Load ONE sample --------
-    lr, hr, scale = dataset[0]   # lr: (T, 1, H, W)
+    # lr: (T, 1, H, W)
+    lr, hr, scale = dataset[0]
 
-    # 🔴 THE IMPORTANT FIX
-    lr = lr.permute(1, 0, 2, 3)   # (1, T, H, W)
-    lr_video = lr.unsqueeze(0)    # (1, 1, T, H, W)
+    # Convert to (B, C, T, H, W)
+    lr = lr.permute(1, 0, 2, 3)     # (1, T, H, W)
+    lr_video = lr.unsqueeze(0)      # (1, 1, T, H, W)
     lr_video = lr_video.to(device)
 
     print("LR video shape :", lr_video.shape)
@@ -90,6 +89,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 if __name__ == "__main__":
