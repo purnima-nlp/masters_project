@@ -229,38 +229,69 @@ class PatchMerging3D(nn.Module):
 # FINAL BACKBONE
 # =========================================================
 class SwinTransformer3D(nn.Module):
-    def __init__(self, in_chans=1, embed_dim=96, depths=(2,2,6,2), num_heads=(3,6,12,24)):
+    def __init__(
+        self,
+        in_chans=1,
+        embed_dim=96,
+        depths=(2, 2, 6, 2),
+        num_heads=(3, 6, 12, 24),
+        window_size=(2, 4, 4)   # ✅ FIXED
+    ):
         super().__init__()
-        self.patch_embed = PatchEmbed3D(in_chans, embed_dim)
+
+        self.window_size = window_size
+        self.patch_embed = PatchEmbed3D(
+            in_chans=in_chans,
+            embed_dim=embed_dim
+        )
+
         self.stages = nn.ModuleList()
         self.downsamples = nn.ModuleList()
 
         for i in range(len(depths)):
             dim = embed_dim * (2 ** i)
+
             blocks = nn.ModuleList([
                 SwinTransformerBlock3D(
-                    dim, num_heads[i],
-                    window_size=(2,7,7),
-                    shift_size=(0,0,0) if j % 2 == 0 else (1,3,3)
+                    dim=dim,
+                    num_heads=num_heads[i],
+                    window_size=window_size,
+                    shift_size=(0, 0, 0) if j % 2 == 0 else
+                               tuple(ws // 2 for ws in window_size)
                 )
                 for j in range(depths[i])
             ])
             self.stages.append(blocks)
+
             if i < len(depths) - 1:
                 self.downsamples.append(PatchMerging3D(dim))
 
-        self.num_features = dim * 2
+        # ✅ correct feature dimension
+        self.num_features = embed_dim * (2 ** (len(depths) - 1))
 
     def forward(self, x):
+        """
+        x: (B, C, T, H, W)
+        """
         x = self.patch_embed(x)
 
         for i, stage in enumerate(self.stages):
             for blk in stage:
                 B, C, D, H, W = x.shape
+
                 window_size, shift_size = get_window_size(
-                    (D, H, W), blk.window_size, blk.shift_size
+                    (D, H, W),
+                    blk.window_size,
+                    blk.shift_size
                 )
-                attn_mask = compute_mask(D, H, W, window_size, shift_size, x.device)
+
+                attn_mask = compute_mask(
+                    D, H, W,
+                    window_size,
+                    shift_size,
+                    x.device
+                )
+
                 x = rearrange(x, 'b c d h w -> b d h w c')
                 x = blk(x, attn_mask)
                 x = rearrange(x, 'b d h w c -> b c d h w')
@@ -269,5 +300,6 @@ class SwinTransformer3D(nn.Module):
                 x = self.downsamples[i](x)
 
         return x
+
 
 
