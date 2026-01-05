@@ -1,47 +1,15 @@
-import sys
 import os
-sys.path.append(os.path.abspath('.'))
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import argparse
 import torch
+
 from models.video_sr_model import VideoSRModel
 from datasets.video_sr_dataset import VideoSRDataset
 from datasets.pipelines.compose import Compose
 from datasets.pipelines.loading import LoadVimeoFrames
-
-
-# -------------------------
-# Demo-only transform
-# -------------------------
-class DemoLRHR:
-    """
-    Create LR / HR tensors from loaded frames (demo only).
-    """
-    def __init__(self, scale):
-        self.scale = scale
-
-    def __call__(self, results):
-        frames = results["frames"]  # list of HWC numpy arrays
-
-        # Convert to torch tensor (C, T, H, W)
-        frames = torch.stack([
-            torch.from_numpy(f).permute(2, 0, 1)
-            for f in frames
-        ])  # (T, C, H, W)
-
-        frames = frames.float() / 255.0
-        frames = frames.permute(1, 0, 2, 3)  # (C, T, H, W)
-
-        # Generate LR by downsampling
-        lr = torch.nn.functional.interpolate(
-            frames.unsqueeze(0),
-            scale_factor=1 / self.scale,
-            mode="bilinear",
-            align_corners=False
-        ).squeeze(0)
-
-        results["lr"] = lr
-        results["hr"] = frames
-        return results
+from datasets.pipelines.transforms import GenerateLRHR
 
 
 # -------------------------
@@ -81,7 +49,7 @@ def main():
     # -------- Pipeline --------
     pipeline = Compose([
         LoadVimeoFrames(),
-        DemoLRHR(scale=args.scale)
+        GenerateLRHR(scale=args.scale)
     ])
 
     # -------- Dataset --------
@@ -92,7 +60,7 @@ def main():
         pipeline=pipeline
     )
 
-    # Get ONE sample
+    # Load ONE sample
     lr, hr, scale = dataset[0]
     lr_video = lr.unsqueeze(0).to(device)  # (1, C, T, H, W)
 
@@ -111,4 +79,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
