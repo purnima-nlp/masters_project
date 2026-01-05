@@ -35,7 +35,8 @@ def main():
     model = VideoSRModel(
     scale=args.scale,
     in_chans=1,
-    window_size=(2, 4, 4)   # <-- ONLY change needed
+    window_size=(2, 4, 4),
+    depths=(1, 1, 1, 1)# <-- ONLY change needed
 )
 
 
